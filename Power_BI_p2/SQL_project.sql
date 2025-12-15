@@ -1,0 +1,91 @@
+SHOW TABLES FROM dpba;
+
+SELECT * FROM IMDB_Review;
+DESCRIBE IMDB_Review;
+
+#CLEANING OF DATA-------
+UPDATE IMDB_Review SET GROSS='0' WHERE GROSS='';
+UPDATE IMDB_Review SET Gross=REPLACE(gross,',','');
+ALTER TABLE IMDB_Review MODIFY COLUMN Gross INT;
+
+UPDATE IMDB_Review SET Certificate='Approved' WHERE certificate='';
+
+#CALCULATION FOR POWER BI DASHBOARD CREATION----------------------------------------------------------------------------
+#1. CREATING CARDS TO SHOW THE HIGHEST IMDB_RATEING , HIGHEST VOTE AND MAXIMUM GROSS A MOVIE COLLECTED.
+SELECT MAX(`IMDB_Rating`) AS TOP_IMDB_Rating, 
+SUM(`No_of_Votes`) AS TOTAL_No_of_Votes,
+MAX(`Gross`) AS HIGHEST_Gross
+FROM IMDB_Review;
+
+#2. CHECKING ON THE PARTICULAR AND GENRE TO BE DRAMA/ROMANCE AND ITS IMDB_RATING.
+SELECT Genre, Released_Year, IMDB_Rating
+FROM IMDB_Review
+WHERE Genre LIKE'%drama%'
+   OR Genre LIKE'%Romance%'
+ORDER BY Released_year;
+
+#3. TO CREATE SLICER BASED ON THE GENRE.
+SELECT DISTINCT Genre, count(*) AS unique_Genre
+FROM IMDB_Review
+GROUP BY Genre
+ORDER BY unique_Genre DESC;
+
+#4. TO GET AVERAGE RUNTIME AND META SCORE BASED ON THE CERTIFICATION OF THE MOVIE.
+SELECT Certificate,
+ROUND(AVG(Runtime)) AS AVG_Runtime,ROUND(AVG(Meta_score)) AS AVG_Metascore
+FROM IMDB_Review
+WHERE Meta_score>50
+GROUP BY Certificate;
+
+#5. TO CREATE A SLICER BASED ON THE UNIQUE DIRECTOR NAME.
+SELECT COUNT(DISTINCT Director) AS Unique_director
+FROM IMDB_Review
+ORDER BY Director ASC;
+
+#6. TOP 10 MOVIES NAME BASED ON THE GROSS COLLECTION.
+SELECT Series_Title, Gross
+FROM imdb_review
+ORDER BY Gross DESC LIMIT 10;
+
+#7. TOP 10 MOVIES NAME BASED ON THE NO_OF_VOTES BY AUDIENCE COLLECTION.
+SELECT Series_Title, No_of_Votes
+FROM imdb_review
+ORDER BY No_of_Votes DESC LIMIT 10;
+
+#8. NUMBER OF MOVIES RELEASED PER YEAR.
+SELECT
+CONCAT((Released_Year DIV 10)*10 ,'s') AS Released_decade,
+COUNT(Series_Title) AS NO_OF_MOVIES
+FROM IMDB_Review
+GROUP BY Released_decade
+ORDER BY Released_decade ASC;
+
+#9. TO FIND CORRELATION BETWEEN IMDB RATING AND METASCORE. 
+SELECT IMDB_Rating, Series_Title, Meta_score
+FROM IMDB_Review
+WHERE Meta_score IS NOT NULL;
+
+#10. COUNT MOVIES PER CERTIFICATE.
+SELECT Certificate, COUNT(Series_Title) AS No_Of_Movies
+FROM IMDB_Review
+GROUP BY Certificate
+ORDER BY No_Of_Movies DESC;
+
+#11. MOVIES WITH HIGHEST METASCORE BUT LOW AUDIENCE VOTES.
+SELECT Series_Title, Released_Year, Director,Meta_score,No_of_Votes
+FROM imdb_review
+WHERE Meta_score>=80 AND No_of_Votes <100000
+ORDER BY Meta_score DESC, No_of_Votes ASC;
+
+#12. TO GROUP THE MOVIE BASED ON THE RUNTIME .
+SELECT
+	CASE
+        WHEN Runtime < 90 THEN 'Short'
+        WHEN Runtime BETWEEN 90 AND 120 THEN 'Medium'
+        WHEN Runtime >120 THEN 'Long'
+        ELSE 'UNKNOWN'
+	END AS Runtime_Group,
+    Series_Title,
+    IMDB_Rating
+FROM IMDB_Review
+ORDER BY IMDB_Rating DESC LIMIT 50;
